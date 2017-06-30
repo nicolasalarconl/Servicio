@@ -5,7 +5,9 @@ using System.Runtime.Serialization;
 using System.ServiceModel;
 using System.ServiceModel.Web;
 using System.Text;
+using MySql.Data;
 using MySql.Data.MySqlClient;
+using CandyCrush.Modelos;
 
 
 namespace servicio
@@ -45,104 +47,100 @@ namespace servicio
             get { return stringValue; }
             set { stringValue = value; }
         }
-    }
 
-    public static MySqlConnection ObtenerConexion()
-    {
-        MySqlConnection conectar = new MySqlConnection("server=127.0.0.1; database=candy; Uid=root; pwd=;");
-
-        conectar.Open();
-        return conectar;
-    }
-
-    public static int AgregarCuenta(ModeloUsuario pUsuario)
-    {
-
-        int retorno = 0;
-
-        MySqlCommand comando = new MySqlCommand(string.Format("Insert into usuarios (user, password) values ('{0}','{1}')",
-            pUsuario.UserName, pUsuario.password), ModeloConexion.ObtenerConexion());
-
-        retorno = comando.ExecuteNonQuery();
-
-        return retorno;
-    }
-
-
-    public static ModeloUsuario ObteneUsuario(String usuarios, String password)
-    {
-
-        ModeloUsuario pUsuario = new ModeloUsuario();
-        MySqlConnection conexion = ModeloConexion.ObtenerConexion();
-
-        MySqlCommand _comando = new MySqlCommand(String.Format("SELECT * FROM usuarios where user='" + usuarios + "' and password='" + password + "'"), conexion);
-        MySqlDataReader _reader = _comando.ExecuteReader();
-        while (_reader.Read())
+        //Conecta con la base de datos "candy"
+        public static MySqlConnection ObtenerConexion()
         {
-            pUsuario.UserName = _reader.GetString(1);
-            pUsuario.password = _reader.GetString(2);
-            pUsuario.Score = _reader.GetInt32(3);
-            pUsuario.Id = _reader.GetInt32(0);
+            MySqlConnection conectar = new MySqlConnection("server=127.0.0.1; database=candy; Uid=root; pwd=;");
 
+            conectar.Open();
+            return conectar;
         }
-        conexion.Close();
-        return pUsuario;
 
-    }
-
-    public static ModeloUsuario ObteneUsuarioregistrado(String usuarios)
-    {
-
-        ModeloUsuario pUsuario = new ModeloUsuario();
-        MySqlConnection conexion = ModeloConexion.ObtenerConexion();
-
-        MySqlCommand _comando = new MySqlCommand(String.Format("SELECT * FROM usuarios where user='" + usuarios + "'"), conexion);
-        MySqlDataReader _reader = _comando.ExecuteReader();
-        while (_reader.Read())
+        //Crea una cuenta en la base de datos
+        public static int AgregarCuenta(String userName, String password)
         {
-            pUsuario.UserName = _reader.GetString(1);
 
+            int retorno = 0;
 
-        }
-        conexion.Close();
-        return pUsuario;
+            MySqlCommand comando = new MySqlCommand(string.Format("Insert into usuarios (user, password) values ('{0}','{1}')",
+                userName, password), CompositeType.ObtenerConexion());
 
-    }
+            retorno = comando.ExecuteNonQuery();
 
-    public static List<ModeloUsuario> BuscarRank()
-    {
-        int count = 0;
-        List<ModeloUsuario> _lista = new List<ModeloUsuario>();
-        MySqlCommand _comando = new MySqlCommand(String.Format(
-       "SELECT user, score, password FROM usuarios order by score DESC"), ModeloConexion.ObtenerConexion());
-        MySqlDataReader _reader = _comando.ExecuteReader();
-        while (_reader.Read())
-        {
-            count += 1;
-            ModeloUsuario pUsuario = new ModeloUsuario();
-
-            pUsuario.Pos = count;
-            pUsuario.UserName = _reader.GetString(0);
-            pUsuario.Score = _reader.GetInt32(1);
-            _lista.Add(pUsuario);
-
+            return retorno;
         }
 
 
-        return _lista;
-    }
+        public static List<String> ObteneUsuario(String usuarios, String password)
+        {
+            List<String> data = new List<String>();
+            MySqlConnection conexion = CompositeType.ObtenerConexion();
+
+            MySqlCommand _comando = new MySqlCommand(String.Format("SELECT * FROM usuarios where user='" + usuarios + "' and password='" + password + "'"), conexion);
+            MySqlDataReader _reader = _comando.ExecuteReader();
+            while (_reader.Read())
+            {
+                data.Add(_reader.GetString(1));                 //Username
+                data.Add(_reader.GetString(2));                 //Password
+                data.Add(_reader.GetInt32(3).ToString());       //Score
+                data.Add(_reader.GetInt32(0).ToString());       //ID
+
+            }
+            conexion.Close();
+            return data;
+
+        }
+
+        public static List<String> ObteneUsuarioregistrado(String usuarios)
+        {
+
+            List<String> data = new List<String>();
+            MySqlConnection conexion = CompositeType.ObtenerConexion();
+
+            MySqlCommand _comando = new MySqlCommand(String.Format("SELECT * FROM usuarios where user='" + usuarios + "'"), conexion);
+            MySqlDataReader _reader = _comando.ExecuteReader();
+            while (_reader.Read())
+            {
+                data.Add(_reader.GetString(1));   //Username
+            }
+            conexion.Close();
+            return data;
+
+        }
+
+        public static List<ModeloUsuario> BuscarRank()
+        {
+            int count = 0;
+            List<ModeloUsuario> _lista = new List<ModeloUsuario>();
+            MySqlCommand _comando = new MySqlCommand(String.Format(
+           "SELECT user, score, password FROM usuarios order by score DESC"), ModeloConexion.ObtenerConexion());
+            MySqlDataReader _reader = _comando.ExecuteReader();
+            while (_reader.Read())
+            {
+                count += 1;
+                ModeloUsuario pUsuario = new ModeloUsuario();
+
+                pUsuario.Pos = count;
+                pUsuario.UserName = _reader.GetString(0);
+                pUsuario.Score = _reader.GetInt32(1);
+                _lista.Add(pUsuario);
+
+            }
 
 
-    public static int ActualizaPuntaje(int id, int Score)
-    {
+            return _lista;
+        }
 
 
-        int retorno = 0;
-        MySqlCommand comando = new MySqlCommand(String.Format("UPDATE usuarios SET score = " + Score + " where idusuario=" + id + ""), ModeloConexion.ObtenerConexion());
-        retorno = comando.ExecuteNonQuery();
+        public static int ActualizaPuntaje(int id, int Score)
+        {
+            int retorno = 0;
+            MySqlCommand comando = new MySqlCommand(String.Format("UPDATE usuarios SET score = " + Score + " where idusuario=" + id + ""), ModeloConexion.ObtenerConexion());
+            retorno = comando.ExecuteNonQuery();
 
+            return retorno;
 
-        return retorno;
-
+        }
     }
 }
